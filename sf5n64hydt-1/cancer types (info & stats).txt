@@ -1,0 +1,34 @@
+samples:	2086
+genes:		971
+categories:	5 (BRCA, KIRC, LUAD, LUSC, UCEC)
+
+
+
+[data: 2086x972 double]
+- each row contains a specific sample
+- each column contains the RPKM RNA-Seq values of a specific gene
+- the last column contains the cancer categories encoded numerically:
+  1=BRCA , 2=KIRC, 3=LUAD, 4=LUSC, 5=UCEC
+
+
+
+[geneIds: 1x971 cell]
+- each cell contains the name/gene ID of every gene stored in each column
+
+
+
+[cancerTypes: 2086x1 cell]
+- each cell contains the category of every sample stored in each row
+
+
+
+     type     (#)
+
+[1]  BRCA     878
+[2]  KIRC     537
+[3]  LUAD     162
+[4]  LUSC     240
+[5]  UCEC     269
+
+          (+)----
+             2086
