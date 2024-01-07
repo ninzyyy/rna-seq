@@ -155,3 +155,11 @@ if __name__ == "__main__":
                 clusters or groupings within the dataset. Unlike PCA,
                 it maintains local patterns and relationships.''')
         st.write(''' **Visualizing Data using t-SNE**  \n*Laurens van der Maaten, Geoffrey Hinton*, 2008''')
+
+st.text("") # Empty line for spacing
+st.write('''By reducing the RPKM RNA-Seq expression values of 971
+         genes across 2086 samples (using PCA and t-SNE) and visualizing
+         the data, it can be observed that the data clusters into five
+         distinct groups that correlate closely with each of the five
+         different cancer types.
+         ''')
