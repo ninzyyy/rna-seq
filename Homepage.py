@@ -38,7 +38,6 @@ if __name__ == "__main__":
     X = df.values
     scaled_X = StandardScaler().fit_transform(X)
 
-
     ### PCA ###
     with st.spinner("Loading PCA..."):
         pca = PCA(n_components=3)
@@ -113,6 +112,7 @@ if __name__ == "__main__":
 
     st.write(fig)
     with st.expander("What is t-SNE?"):
+
         st.write('''t-Distributed Stochastic Neighbor Embedding (t-SNE)
                 is a non-linear dimensionality reduction technique.
                 t-SNE converts high-dimensional distances between
@@ -120,3 +120,5 @@ if __name__ == "__main__":
                 divergence between the probabilities. t-SNE can reveal
                 clusters or groupings within the dataset. Unlike PCA,
                 it maintains local patterns and relationships.''')
+
+        st.write(''' **Visualizing Data using t-SNE**  \n*Laurens van der Maaten, Geoffrey Hinton*, 2008''')
