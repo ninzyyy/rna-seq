@@ -25,7 +25,7 @@ st.set_page_config(page_title=None,
 
 if __name__ == "__main__":
 
-    dir = os.path.join('sf5n64hydt-1', 'cancer types.mat')
+    dir = os.path.join('data', 'cancer types.mat')
     mat = scipy.io.loadmat(dir)
 
     ### Data collection ###
