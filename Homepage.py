@@ -38,6 +38,15 @@ if __name__ == "__main__":
     X = df.values
     scaled_X = StandardScaler().fit_transform(X)
 
+    ### Table ###
+    st.write("RPKM RNA-Seq Values of 971 Genes in Five Different Cancer Types Across 2086 Samples")
+
+    st.dataframe(pd.concat([pd.DataFrame(cancerTypes), df], axis=1).rename(columns={0:'Cancer Type'}),
+                 width=1000,
+                 height=int(35.2*(5+1))) # Where 5 is the number of rows displayed
+
+    st.write('''''')
+
     ### PCA ###
     with st.spinner("Loading PCA..."):
         pca = PCA(n_components=3)
@@ -56,7 +65,7 @@ if __name__ == "__main__":
         fig.update_traces(marker = dict(size=3))
 
         fig.update_layout(title={'text': "3D PCA Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
-                                'y':0.85,
+                                'y':0.9,
                                 'x':0.50,
                                 'xanchor': 'center',
                                 'yanchor': 'top'},
@@ -68,7 +77,7 @@ if __name__ == "__main__":
                             ),
 
                         legend=dict(
-                            x=0.8,
+                            x=0.9,
                             y=0.8,
                         )
 
@@ -103,7 +112,7 @@ if __name__ == "__main__":
         fig.update_traces(marker = dict(size=3))
 
         fig.update_layout(title={'text': "3D t-SNE Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
-                                'y':0.85,
+                                'y':0.9,
                                 'x':0.50,
                                 'xanchor': 'center',
                                 'yanchor': 'top'},
@@ -115,7 +124,7 @@ if __name__ == "__main__":
                             ),
 
                         legend=dict(
-                            x=0.8,
+                            x=0.9,
                             y=0.8,
                             )
                         )
