@@ -45,7 +45,8 @@ if __name__ == "__main__":
                  width=1000,
                  height=int(35.2*(5+1))) # Where 5 is the number of rows displayed
 
-    st.write('''''')
+    with st.expander("Cancer Types", expanded=False):
+        st.write('''**LUAD** - *lung adenocarcinoma*  \n**BRCA** - *breast invasive carcinoma*  \n**KIRC** - *kidney renal clear cell carcinoma*  \n**LUSC** - *lung squamous cell carcinoma*  \n**UCEC** - *uterine corpus endometrial carcinoma*''')
 
     ### PCA ###
     with st.spinner("Loading PCA..."):
