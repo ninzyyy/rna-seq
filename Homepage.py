@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
         fig.update_layout(title={'text': "3D PCA Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
                                 'y':0.85,
-                                'x':0.375,
+                                'x':0.50,
                                 'xanchor': 'center',
                                 'yanchor': 'top'},
 
@@ -67,10 +67,15 @@ if __name__ == "__main__":
                             zaxis_title='PC3'
                             ),
 
-                        showlegend=True)
+                        legend=dict(
+                            x=0.8,
+                            y=0.8,
+                        )
+
+                        )
 
     st.write(fig)
-    with st.expander("What is PCA?"):
+    with st.expander("What is PCA?", expanded=False):
         st.write('''Principal component analysis (PCA) is a linear
                 dimensionality reduction technique that preserves
                 the variability within the dataset. This technique
@@ -79,6 +84,7 @@ if __name__ == "__main__":
                 to the direction of maximum variance. PCA simplifies the
                 complexity of high-dimensional data allowing for easier
                 visualization, noise reduction, and feature selection.''')
+        st.write(''' **Analysis of a complex of statistical variables into principal components**  \n*Hotelling, H.*, 1933''')
 
     ### t-SNE ###
     with st.spinner("Loading t-SNE..."):
@@ -98,7 +104,7 @@ if __name__ == "__main__":
 
         fig.update_layout(title={'text': "3D t-SNE Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
                                 'y':0.85,
-                                'x':0.375,
+                                'x':0.50,
                                 'xanchor': 'center',
                                 'yanchor': 'top'},
 
@@ -108,11 +114,14 @@ if __name__ == "__main__":
                             zaxis_title='t-SNE_3'
                             ),
 
-                        showlegend=True)
+                        legend=dict(
+                            x=0.8,
+                            y=0.8,
+                            )
+                        )
 
     st.write(fig)
-    with st.expander("What is t-SNE?"):
-
+    with st.expander("What is t-SNE?", expanded=False):
         st.write('''t-Distributed Stochastic Neighbor Embedding (t-SNE)
                 is a non-linear dimensionality reduction technique.
                 t-SNE converts high-dimensional distances between
@@ -120,5 +129,4 @@ if __name__ == "__main__":
                 divergence between the probabilities. t-SNE can reveal
                 clusters or groupings within the dataset. Unlike PCA,
                 it maintains local patterns and relationships.''')
-
         st.write(''' **Visualizing Data using t-SNE**  \n*Laurens van der Maaten, Geoffrey Hinton*, 2008''')
