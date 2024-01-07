@@ -46,7 +46,22 @@ if __name__ == "__main__":
                  height=int(35.2*(5+1))) # Where 5 is the number of rows displayed
 
     with st.expander("Cancer Types", expanded=False):
-        st.write('''**LUAD** - *lung adenocarcinoma*  \n**BRCA** - *breast invasive carcinoma*  \n**KIRC** - *kidney renal clear cell carcinoma*  \n**LUSC** - *lung squamous cell carcinoma*  \n**UCEC** - *uterine corpus endometrial carcinoma*''')
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["BRCA", "KIRC", "LUAD", "LUSC", "UCEC"])
+        with tab1:
+            st.write("**Breast Invasive Carcinoma**")
+            st.write("A cancer that develops from breast tissue.")
+        with tab2:
+            st.write("**Kidney Renal Clear Cell Carcinoma**")
+            st.write("A kidney cancer that originates in the lining of the proximal convoluted tubule, a part of the tubes in the kidney that transport urine. ")
+        with tab3:
+            st.write("**Lung Adenocarcinoma**")
+            st.write("The most common type of lung cancer, most often found in patients with a history of smoking cigarettes.")
+        with tab4:
+            st.write("**Lung Squamous Cell Carcinoma**")
+            st.write("A non-small-cell lung cancer that originates in the bronchi. Most prevalent type of lung cancer after lung adenocarcinoma.")
+        with tab5:
+            st.write("**Uterine Corpus Endometrial Carcinoma**")
+            st.write("Also known as endometrial cancer, it is a cancer that arises from the endometrium (the lining of the uterus or womb).")
 
     ### PCA ###
     with st.spinner("Loading PCA..."):
