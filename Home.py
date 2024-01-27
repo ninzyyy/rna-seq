@@ -1,16 +1,24 @@
 ### Imports ###
 
+### Streamlit ###
 import streamlit as st
-import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.io
-import plotly.express as px
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
+# Housekeeping
+import os
+
+# Math
+import pandas as pd
+import numpy as np
+
+#Visualization
+import seaborn as sns
+
+### RNA-Seq ###
+from pydeseq2.dds import DeseqDataSet
+from pydeseq2.default_inference import DefaultInference
+from pydeseq2.ds import DeseqStats
+import gseapy as gp
+from gseapy.plot import gseaplot
 
 ### Page Config ###
 st.set_page_config(page_title=None,
@@ -25,141 +33,77 @@ st.set_page_config(page_title=None,
 
 if __name__ == "__main__":
 
-    dir = os.path.join('data', 'cancer types.mat')
-    mat = scipy.io.loadmat(dir)
+    # Load Data
+    data_dir = os.path.join('data', 'E-GEOD-60052-raw-counts.tsv')
+    meta_dir = os.path.join('data', 'E-GEOD-60052-experiment-design.tsv')
+    df = pd.read_csv(data_dir, sep='\t')
+    meta_df = pd.read_csv(meta_dir, sep='\t')
 
-    ### Data collection ###
-    cancerTypes = [type[0][0] for type in mat['cancerTypes']]
-    data = mat['data'][:,:971] # removed column indicating cancer type
-    genes = [id[0]for id in mat['geneIds'][0]] # 971 genes
+    # Data Preprocessing
+    df['Gene Name'] = df['Gene Name'].fillna(df['Gene ID'])
+    df.drop(columns=['Gene ID'], inplace=True)
+    df = df.T
+    df.columns = df.iloc[0]
+    df = df[1:]
+    df.rename_axis(None, axis=1,inplace=True)
+    df = df.loc[:,~df.columns.duplicated()].copy()
+    df = df[df.columns[df.sum(axis=0) >= 10]]
 
-    ### Data preprocessing ###
-    df = pd.DataFrame(data=data, columns=genes)
-    X = df.values
-    scaled_X = StandardScaler().fit_transform(X)
+    meta_df = meta_df[['Run', 'Sample Characteristic[disease]']]
+    meta_df.rename(columns={'Sample Characteristic[disease]':'condition'}, inplace=True)
+    meta_df.set_index('Run', inplace=True)
+    meta_df = meta_df.rename_axis(None)
 
-    ### Table ###
-    st.write("RPKM RNA-Seq Values of 971 Genes in Five Different Cancer Types Across 2086 Samples")
+    # Differential Analysis
 
-    st.dataframe(pd.concat([pd.DataFrame(cancerTypes), df], axis=1).rename(columns={0:'Cancer Type'}),
-                 width=1000,
-                 height=int(35.2*(5+1))) # Where 5 is the number of rows displayed
+    inference = DefaultInference(n_cpus=8)
 
-    with st.expander("Cancer Types", expanded=False):
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["BRCA", "KIRC", "LUAD", "LUSC", "UCEC"])
-        with tab1:
-            st.write("**Breast Invasive Carcinoma**")
-            st.write("A cancer that develops from breast tissue.")
-        with tab2:
-            st.write("**Kidney Renal Clear Cell Carcinoma**")
-            st.write("A kidney cancer that originates in the lining of the proximal convoluted tubule, a part of the tubes in the kidney that transport urine. ")
-        with tab3:
-            st.write("**Lung Adenocarcinoma**")
-            st.write("The most common type of lung cancer, most often found in patients with a history of smoking cigarettes.")
-        with tab4:
-            st.write("**Lung Squamous Cell Carcinoma**")
-            st.write("A non-small-cell lung cancer that originates in the bronchi. Most prevalent type of lung cancer after lung adenocarcinoma.")
-        with tab5:
-            st.write("**Uterine Corpus Endometrial Carcinoma**")
-            st.write("Also known as endometrial cancer, it is a cancer that arises from the endometrium (the lining of the uterus or womb).")
+    dds = DeseqDataSet(
+        counts=df,
+        metadata=meta_df,
+        design_factors="condition",
+        refit_cooks=True,
+        inference=inference,
+    )
 
-    ### PCA ###
-    with st.spinner("Loading PCA..."):
-        pca = PCA(n_components=3)
-        principal_components = pca.fit_transform(scaled_X)
-        principal_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3'])
-        final_df = pd.concat([principal_df, pd.DataFrame(cancerTypes)], axis=1)
-        final_df.rename(columns={0:'cancer_type'}, inplace=True)
+    dds.deseq2()
 
-        fig = px.scatter_3d(final_df,
-                            x='PC1', y='PC2', z='PC3',
-                            color='cancer_type',
-                            width=600, height=500,
-                            opacity=1.0
-                            )
+    stat_res = DeseqStats(dds, inference=inference)
+    stat_res.summary()
+    res = stat_res.results_df
 
-        fig.update_traces(marker = dict(size=3))
+    st.write(res)
 
-        fig.update_layout(title={'text': "3D PCA Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
-                                'y':0.9,
-                                'x':0.50,
-                                'xanchor': 'center',
-                                'yanchor': 'top'},
+    col1, col2, col3 = st.columns(3)
 
-                        scene = dict(
-                            xaxis_title='PC1',
-                            yaxis_title='PC2',
-                            zaxis_title='PC3'
-                            ),
+    with col1:
+        padj = st.number_input("padj", value=0.05)
+    with col2:
+        log2FoldChange = st.number_input("log2FoldChange", value = 0.05)
+    with col3:
+        baseMean = st.number_input("base mean", value=20)
 
-                        legend=dict(
-                            x=0.9,
-                            y=0.8,
-                        )
+    numGenes = st.number_input("Number of most and least expressed genes to keep:", value=50)
 
-                        )
+    if st.button("Generate Heatmap"):
 
-    st.write(fig)
-    with st.expander("What is PCA?", expanded=False):
-        st.write('''Principal component analysis (PCA) is a linear
-                dimensionality reduction technique that preserves
-                the variability within the dataset. This technique
-                identifies principal components (variables that capture
-                the variance in the data) and reorients the data's axes
-                to the direction of maximum variance. PCA simplifies the
-                complexity of high-dimensional data allowing for easier
-                visualization, noise reduction, and feature selection.''')
-        st.write(''' **Analysis of a complex of statistical variables into principal components**  \n*Hotelling, H.*, 1933''')
+        res = res[(res['padj'] < padj)]
+        res = res[(abs(res['log2FoldChange']) > log2FoldChange)]
+        res = res[(res['baseMean'] > baseMean)]
+        res.sort_values(by=['log2FoldChange'], ascending=False, inplace=True)
 
-    ### t-SNE ###
-    with st.spinner("Loading t-SNE..."):
-        tsne = TSNE(n_components=3).fit_transform(scaled_X)
-        principal_df = pd.DataFrame(data=tsne, columns=['t-SNE_1', 't-SNE_2', 't-SNE_3'])
-        final_df = pd.concat([principal_df, pd.DataFrame(cancerTypes)], axis=1)
-        final_df.rename(columns={0:'cancer_type'}, inplace=True)
 
-        fig = px.scatter_3d(final_df,
-                            x='t-SNE_1', y='t-SNE_2', z='t-SNE_3',
-                            color='cancer_type',
-                            width=600, height=500,
-                            opacity=1.0
-                            )
+        top_res = pd.concat([res.head(numGenes), res.tail(numGenes)])
 
-        fig.update_traces(marker = dict(size=3))
+        dds.layers['log1p'] = np.log1p(dds.layers['normed_counts'])
+        dds_sigs = dds[:, top_res.index]
 
-        fig.update_layout(title={'text': "3D t-SNE Distinguishing Cancer Types <br> Through RPKM RNA-Seq Expression Values",
-                                'y':0.9,
-                                'x':0.50,
-                                'xanchor': 'center',
-                                'yanchor': 'top'},
+        diffexpr_df = pd.DataFrame(dds_sigs.layers['log1p'].T,
+                        index=dds_sigs.var_names,
+                        columns=dds_sigs.obs_names)
 
-                        scene = dict(
-                            xaxis_title='t-SNE_1',
-                            yaxis_title='t-SNE_2',
-                            zaxis_title='t-SNE_3'
-                            ),
-
-                        legend=dict(
-                            x=0.9,
-                            y=0.8,
-                            )
-                        )
-
-    st.write(fig)
-    with st.expander("What is t-SNE?", expanded=False):
-        st.write('''t-Distributed Stochastic Neighbor Embedding (t-SNE)
-                is a non-linear dimensionality reduction technique.
-                t-SNE converts high-dimensional distances between
-                datapoints into probabilites and minimizes the
-                divergence between the probabilities. t-SNE can reveal
-                clusters or groupings within the dataset. Unlike PCA,
-                it maintains local patterns and relationships.''')
-        st.write(''' **Visualizing Data using t-SNE**  \n*Laurens van der Maaten, Geoffrey Hinton*, 2008''')
-
-st.text("") # Empty line for spacing
-st.write('''By reducing the RPKM RNA-Seq expression values of 971
-         genes across 2086 samples (using PCA and t-SNE) and visualizing
-         the data, it can be observed that the data clusters into five
-         distinct groups that correlate closely with each of the five
-         different cancer types.
-         ''')
+        st.pyplot(sns.clustermap(diffexpr_df,
+                                z_score = 0,
+                                cmap='RdBu_r'
+                                )
+                )
