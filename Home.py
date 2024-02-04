@@ -29,7 +29,7 @@ st.set_page_config(page_title=None,
 
 ### Functions ###
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def preprocess_datasets(countData, colData):
 
     # Preprocess countData to pyDESEQ2 format
@@ -50,7 +50,7 @@ def preprocess_datasets(countData, colData):
 
     return countData, colData
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def perform_diff_analysis(countData, colData):
 
     inference = DefaultInference(n_cpus=8)
