@@ -52,6 +52,25 @@ def preprocess_datasets(countData, colData):
     return countData, colData
 
 @st.cache_data(show_spinner=False)
+def process_files(uploaded_files):
+    df = meta_df = None
+
+    for file in uploaded_files:
+
+        if "countData" in file.name:
+            df = pd.read_csv(file)
+
+        elif "colData" in file.name:
+            meta_df = pd.read_csv(file)
+
+    if df is not None and meta_df is not None:
+        return preprocess_datasets(df, meta_df)
+
+    else:
+        st.error("Please upload both countData and colData files.")
+        return None, None
+
+@st.cache_data(show_spinner=False)
 def perform_diff_analysis(countData, colData):
 
     inference = DefaultInference(n_cpus=8)
@@ -70,107 +89,77 @@ def perform_diff_analysis(countData, colData):
 
     return stat_res.results_df, dds
 
-### Main ###
 
-if 'data_loaded' not in st.session_state:
-    st.session_state.data_loaded = False
+### Main ###
 
 if 'analysis_done' not in st.session_state:
     st.session_state.analysis_done = False
 
-if __name__ == "__main__":
+uploaded_files = st.file_uploader("Upload a countData and a colData CSV file:", accept_multiple_files=True)
 
-    uploaded_files = st.file_uploader("Upload a countData and a colData CSV file:", accept_multiple_files=True)
+if st.button("Uploaded Files") and len(uploaded_files) == 2:
 
-    if st.button("Upload Files"):
+    countData, colData = process_files(uploaded_files)
 
-        with st.spinner("Loading data..."):
+    if countData is not None and colData is not None:
+        res, dds = perform_diff_analysis(countData, colData)
 
-            if len(uploaded_files) == 2:
+        st.session_state['countData'] = countData
+        st.session_state['colData'] = colData
+        st.session_state['res'] = res
+        st.session_state['dds'] = dds
+        st.session_state.analysis_done = True
 
-                for file in uploaded_files:
+if st.button("Demo"):
 
-                    if re.search(r'\bcountData\b', file):
-                        df = pd.read_csv(file)
-                        st.session_state.df = df
+    with st.spinner("Loading and preprocessing data..."):
+        dir = os.path.join('data', 'E-GEOD-60052-raw-counts.tsv')
+        df = pd.read_csv(dir, sep='\t')
 
-                    if re.search(r'\bcolData\b', file):
-                        file.name = "colData"
-                        meta_df = pd.read_csv(file)
-                        st.session_state.meta_df = meta_df
+        meta_dir = os.path.join('data', 'E-GEOD-60052-experiment-design.tsv')
+        meta_df = pd.read_csv(meta_dir, sep='\t')
 
-        with st.spinner("Preprocessing data..."):
+        countData, colData = preprocess_datasets(df, meta_df)
 
-            countData, colData = preprocess_datasets(st.session_state.df, st.session_state.meta_df)
-            st.session_state.countData = countData
-            st.session_state.colData = colData
-            st.session_state.data_loaded = True
+    with st.spinner("Performing differential analysis..."):
+        res, dds = perform_diff_analysis(countData, colData)
 
-        # Differential Analysis
-        if not st.session_state['analysis_done']:
-            with st.spinner("Performing differential analysis..."):
+    st.session_state['countData'] = countData
+    st.session_state['colData'] = colData
+    st.session_state['res'] = res
+    st.session_state['dds'] = dds
+    st.session_state.analysis_done = True
 
-                res, dds = perform_diff_analysis(st.session_state['countData'], st.session_state['colData'])
-                st.session_state.res = res
-                st.session_state.dds = dds
-                st.session_state.analysis_done = True
+if st.session_state.analysis_done:
 
-    if st.button("Demo"):
+    # Input parameters for generating the heatmap
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        padj = st.number_input("padj", value=0.05)
+    with col2:
+        log2FoldChange = st.number_input("log2FoldChange", value = 0.05)
+    with col3:
+        baseMean = st.number_input("base mean", value=20)
+    numGenes = st.number_input("Number of overexpressed and underexpressed genes to keep:", value=50)
 
-        with st.spinner("Loading data..."):
+    if st.button("Generate Heatmap"):
 
-            dir = os.path.join('data', 'E-GEOD-60052-raw-counts.tsv') # countData
-            df = pd.read_csv(dir, sep='\t')
-            st.session_state.df = df
+        with st.spinner("Generating heatmap..."):
 
-            meta_dir = os.path.join('data', 'E-GEOD-60052-experiment-design.tsv') #colData
-            meta_df = pd.read_csv(meta_dir, sep='\t')
-            st.session_state.meta_df = meta_df
+            filtered_res = st.session_state.res[(st.session_state.res['padj'] < padj) &
+                                            (abs(st.session_state.res['log2FoldChange']) > log2FoldChange) &
+                                            (st.session_state.res['baseMean'] > baseMean)]
 
-        with st.spinner("Preprocessing data..."):
+            filtered_res.sort_values(by=['log2FoldChange'], ascending=False, inplace=True)
 
-            countData, colData = preprocess_datasets(st.session_state.df, st.session_state.meta_df)
-            st.session_state.countData = countData
-            st.session_state.colData = colData
-            st.session_state.data_loaded = True
+            top_res = pd.concat([filtered_res.head(numGenes), filtered_res.tail(numGenes)])
 
-        # Differential Analysis
-        if not st.session_state['analysis_done']:
-            with st.spinner("Performing differential analysis..."):
+            st.session_state.dds.layers['log1p'] = np.log1p(st.session_state.dds.layers['normed_counts'])
 
-                res, dds = perform_diff_analysis(st.session_state['countData'], st.session_state['colData'])
-                st.session_state.res = res
-                st.session_state.dds = dds
-                st.session_state.analysis_done = True
+            dds_sigs = st.session_state.dds[:, top_res.index]
 
-        # Input parameters for generating the heatmap
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            padj = st.number_input("padj", value=0.05)
-        with col2:
-            log2FoldChange = st.number_input("log2FoldChange", value = 0.05)
-        with col3:
-            baseMean = st.number_input("base mean", value=20)
-        numGenes = st.number_input("Number of overexpressed and underexpressed genes to keep:", value=50)
+            diffexpr_df = pd.DataFrame(dds_sigs.layers['log1p'].T,
+                                    index=dds_sigs.var_names,
+                                    columns=dds_sigs.obs_names)
 
-        if st.button("Generate Heatmap"):
-
-            with st.spinner("Generating heatmap..."):
-
-                filtered_res = st.session_state.res[(st.session_state.res['padj'] < padj) &
-                                                (abs(st.session_state.res['log2FoldChange']) > log2FoldChange) &
-                                                (st.session_state.res['baseMean'] > baseMean)]
-
-                filtered_res.sort_values(by=['log2FoldChange'], ascending=False, inplace=True)
-
-                top_res = pd.concat([filtered_res.head(numGenes), filtered_res.tail(numGenes)])
-
-                st.session_state.dds.layers['log1p'] = np.log1p(st.session_state.dds.layers['normed_counts'])
-
-                dds_sigs = st.session_state.dds[:, top_res.index]
-
-                diffexpr_df = pd.DataFrame(dds_sigs.layers['log1p'].T,
-                                        index=dds_sigs.var_names,
-                                        columns=dds_sigs.obs_names)
-
-                st.pyplot(sns.clustermap(diffexpr_df, z_score=0, cmap='RdBu_r'))
+            st.pyplot(sns.clustermap(diffexpr_df, z_score=0, cmap='RdBu_r'))
