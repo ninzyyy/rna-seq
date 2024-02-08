@@ -4,8 +4,8 @@
 import streamlit as st
 
 # Housekeeping
-import os
-import re
+import os, re, requests
+
 
 # Math
 import pandas as pd
@@ -89,6 +89,22 @@ def perform_diff_analysis(countData, colData):
 
     return stat_res.results_df, dds
 
+@st.cache_data(show_spinner=False)
+def get_gene_name(ensembl_id):
+    try:
+        url = f"https://mygene.info/v3/gene/{ensembl_id}"
+        response = requests.get(url)
+        data = response.json()
+
+        # Check if 'symbol' is in the data and not None
+        if 'symbol' in data and data['symbol'] is not None:
+            return data['symbol']
+        else:
+            return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
 
 ### Main ###
 
@@ -97,7 +113,7 @@ if 'analysis_done' not in st.session_state:
 
 uploaded_files = st.file_uploader("Upload a countData and a colData CSV file:", accept_multiple_files=True)
 
-if st.button("Uploaded Files") and len(uploaded_files) == 2:
+if st.button("Upload Files") and len(uploaded_files) == 2:
 
     countData, colData = process_files(uploaded_files)
 
@@ -113,6 +129,7 @@ if st.button("Uploaded Files") and len(uploaded_files) == 2:
 if st.button("Demo"):
 
     with st.spinner("Loading and preprocessing data..."):
+
         dir = os.path.join('data', 'E-GEOD-60052-raw-counts.tsv')
         df = pd.read_csv(dir, sep='\t')
 
@@ -124,10 +141,12 @@ if st.button("Demo"):
     with st.spinner("Performing differential analysis..."):
         res, dds = perform_diff_analysis(countData, colData)
 
+    # Update session state immediately after processing
     st.session_state['countData'] = countData
     st.session_state['colData'] = colData
     st.session_state['res'] = res
     st.session_state['dds'] = dds
+    # Setting this state variable here ensures the rest of your script knows the analysis is complete.
     st.session_state.analysis_done = True
 
 if st.session_state.analysis_done:
@@ -163,3 +182,6 @@ if st.session_state.analysis_done:
                                     columns=dds_sigs.obs_names)
 
             st.pyplot(sns.clustermap(diffexpr_df, z_score=0, cmap='RdBu_r'))
+
+
+            st.write(get_gene_name('ENSG00000233615'))
