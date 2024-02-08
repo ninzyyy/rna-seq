@@ -24,7 +24,7 @@ from gseapy.plot import gseaplot
 ### Page Config ###
 st.set_page_config(page_title=None,
                    page_icon="🌱",
-                   layout="centered",
+                   layout="wide",
                    initial_sidebar_state="auto",
                    menu_items=None)
 
@@ -105,7 +105,6 @@ def get_gene_name(ensembl_id):
         print(f"An error occurred: {e}")
         return None
 
-
 ### Main ###
 
 if 'analysis_done' not in st.session_state:
@@ -126,6 +125,7 @@ if st.button("Upload Files") and len(uploaded_files) == 2:
         st.session_state['dds'] = dds
         st.session_state.analysis_done = True
 
+st.write("or click the button below to view a preview:")
 if st.button("Demo"):
 
     with st.spinner("Loading and preprocessing data..."):
@@ -149,9 +149,13 @@ if st.button("Demo"):
     # Setting this state variable here ensures the rest of your script knows the analysis is complete.
     st.session_state.analysis_done = True
 
+st.divider()
+
 if st.session_state.analysis_done:
 
     # Input parameters for generating the heatmap
+    st.markdown('<span style="text-decoration: underline;">Threshold Criteria for Gene Expression Analysis</span>', unsafe_allow_html=True)
+    #st.write("Threshold Criteria for Gene Expression Analysis")
     col1, col2, col3 = st.columns(3)
     with col1:
         padj = st.number_input("padj", value=0.05)
@@ -162,7 +166,7 @@ if st.session_state.analysis_done:
     numGenes = st.number_input("Number of overexpressed and underexpressed genes to keep:", value=50)
 
     if st.button("Generate Heatmap"):
-
+        st.divider()
         with st.spinner("Generating heatmap..."):
 
             filtered_res = st.session_state.res[(st.session_state.res['padj'] < padj) &
@@ -181,7 +185,18 @@ if st.session_state.analysis_done:
                                     index=dds_sigs.var_names,
                                     columns=dds_sigs.obs_names)
 
+            st.markdown('<span style="text-decoration: underline;">Heatmap of Gene Expression Levels Across Samples</span>', unsafe_allow_html=True)
             st.pyplot(sns.clustermap(diffexpr_df, z_score=0, cmap='RdBu_r'))
+            st.divider()
 
+            with st.spinner("Getting Gene Names for Gene IDs..."):
+                top_res['Gene Name'] = top_res.index.map(get_gene_name)
+                top_res['padj'] = top_res['padj'].apply(lambda x: format(float(x),".4f"))
+                top_res['log2FoldChange'] = top_res['log2FoldChange'].apply(lambda x: format(float(x),".4f"))
 
-            st.write(get_gene_name('ENSG00000233615'))
+            st.markdown('<span style="text-decoration: underline;">Table of Differential Gene Expression Analysis Results</span>', unsafe_allow_html=True)
+            st.dataframe(top_res[['Gene Name', 'padj', 'log2FoldChange']],
+                        use_container_width=False,
+                        hide_index=False,
+                        height = ((5 + 1) * 35 + 3), # Where 5 is the number of rows to be shown
+                        )
