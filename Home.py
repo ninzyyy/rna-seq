@@ -189,14 +189,14 @@ if st.session_state.analysis_done:
             st.pyplot(sns.clustermap(diffexpr_df, z_score=0, cmap='RdBu_r'))
             st.divider()
 
-    with st.spinner("Getting Gene Names for Gene IDs..."):
-        top_res['Gene Name'] = top_res.index.map(get_gene_name)
-        top_res['padj'] = top_res['padj'].apply(lambda x: format(float(x),".4f"))
-        top_res['log2FoldChange'] = top_res['log2FoldChange'].apply(lambda x: format(float(x),".4f"))
+        with st.spinner("Getting Gene Names for Gene IDs..."):
+            top_res['Gene Name'] = top_res.index.map(get_gene_name)
+            top_res['padj'] = top_res['padj'].apply(lambda x: format(float(x),".4f"))
+            top_res['log2FoldChange'] = top_res['log2FoldChange'].apply(lambda x: format(float(x),".4f"))
 
-    st.markdown('<span style="text-decoration: underline;">Table of Differential Gene Expression Analysis Results</span>', unsafe_allow_html=True)
-    st.dataframe(top_res[['Gene Name', 'padj', 'log2FoldChange']],
-                use_container_width=False,
-                hide_index=False,
-                height = ((5 + 1) * 35 + 3), # Where 5 is the number of rows to be shown
-                )
+        st.markdown('<span style="text-decoration: underline;">Table of Differential Gene Expression Analysis Results</span>', unsafe_allow_html=True)
+        st.dataframe(top_res[['Gene Name', 'padj', 'log2FoldChange']],
+                    use_container_width=False,
+                    hide_index=False,
+                    height = ((5 + 1) * 35 + 3), # Where 5 is the number of rows to be shown
+                    )
