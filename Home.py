@@ -117,24 +117,24 @@ def get_gene_name(ensembl_id):
 if "analysis_done" not in st.session_state:
     st.session_state.analysis_done = False
 
-uploaded_files = st.file_uploader(
-    "Upload a countData and a colData CSV file:", accept_multiple_files=True
-)
+# uploaded_files = st.file_uploader(
+#     "Upload a countData and a colData CSV file:", accept_multiple_files=True
+# )
 
-if st.button("Upload Files") and len(uploaded_files) == 2:
+# if st.button("Upload Files") and len(uploaded_files) == 2:
 
-    countData, colData = process_files(uploaded_files)
+#     countData, colData = process_files(uploaded_files)
 
-    if countData is not None and colData is not None:
-        res, dds = perform_diff_analysis(countData, colData)
+#     if countData is not None and colData is not None:
+#         res, dds = perform_diff_analysis(countData, colData)
 
-        st.session_state["countData"] = countData
-        st.session_state["colData"] = colData
-        st.session_state["res"] = res
-        st.session_state["dds"] = dds
-        st.session_state.analysis_done = True
+#         st.session_state["countData"] = countData
+#         st.session_state["colData"] = colData
+#         st.session_state["res"] = res
+#         st.session_state["dds"] = dds
+#         st.session_state.analysis_done = True
 
-st.write("or click the button below to view a preview:")
+st.write("Click the button below to view a preview:")
 if st.button("Demo"):
 
     with st.spinner("Loading and preprocessing data..."):
